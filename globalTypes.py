@@ -107,3 +107,4 @@ class NodoArbol:
         self.parametros = [] #parametros es igual a los parametros que se le pasan a la funcion
         self.parteInterna = None #parteInterna es igual a la parte interna de la funcion
         self.condicion = None #condicion es igual a la condicion que se va a evaluar
+        self.lineaAparicion =  0 #lineaAparicion es igual a la linea en la que aparece el nodo

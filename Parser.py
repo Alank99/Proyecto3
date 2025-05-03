@@ -22,6 +22,7 @@ edentacion = 0 # Variable para la edentacionacion del arbol
 def nodoNuevo(tipo):
     arbol =  NodoArbol()
     arbol.tipoNodo = tipo # Se le asigna el tipo de la expresion
+    arbol.lineaAparicion = lineno # Se le asigna la linea de aparicion
     return arbol # Se regresa el arbol de sintaxis abstracta
 
 #endregion
