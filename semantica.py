@@ -33,6 +33,7 @@ def recorrer_preorden(nodo, tabla, ambito_actual="global"):
             "array": es_array,
             "tamaño": "0" if logitudArr == "[]" else logitudArr,
             "linea": linea
+
         }
         tabla[ambito_actual].append(entrada)
     #si es una declaracion de funcion se agrega a la pila de las tablas
@@ -124,7 +125,6 @@ def imprimir_tabla(tabla):
             linea = str(entrada['linea']).ljust(10)
             print(f"{nombre}{tipo}{es_array}{tam}{linea}")
 
-
 def tabla(tree, imprime=True):
     tabla_resultado = {}
     recorrer_preorden(tree, tabla_resultado)
@@ -132,37 +132,114 @@ def tabla(tree, imprime=True):
         imprimir_tabla(tabla_resultado)
     return tabla_resultado
 
-def postorden(nodo, indent=0):
+def recorre_postorden(nodo, tabla, ambito_actual="global"):
+    # Si el nodo es una lista, recorrer todos los elementos
     if isinstance(nodo, list):
         for subnodo in nodo:
-            postorden(subnodo, indent)
-        return
+            recorre_postorden(subnodo, tabla, ambito_actual)
+        return None
 
+    # Si el nodo es None, no hacer nada
     if nodo is None:
-        return
+        return None
 
+    # Primero recorrer los hijos del nodo
     for hijo in (
         nodo.hijoIzquierdo,
         nodo.hijoDerecho,
-        nodo.parteInterna,
-        nodo.expresion,
-        nodo.entonces,
         nodo.sino,
-        nodo.condicion
+        nodo.entonces,
+        nodo.expresion,
+        nodo.condicion,
+        nodo.parteInterna,
     ):
-        postorden(hijo, indent + 1)
+        recorre_postorden(hijo, tabla, ambito_actual)
 
+    # Recorrer las listas de argumentos, parámetros y sentencias
     for lista in (
+        nodo.argumentos,
         nodo.parametros,
         nodo.sentencias,
-        nodo.argumentos,
     ):
-        if lista:
-            for subnodo in lista:
-                postorden(subnodo, indent + 1)
+        for hijo in lista:
+            recorre_postorden(hijo, tabla, ambito_actual)
 
-    tipo_nodo = nodo.tipoNodo.name if nodo.tipoNodo else "Ninguno"
-    print("  " * indent + f"[POST] Nodo: {tipo_nodo} - {nodo.nombre or nodo.valor or nodo.operador}")
+    # **Semántica: Comprobaciones en cada tipo de nodo**
+    
+    # Si el nodo es una variable (para comprobar su existencia y tipo)
+    if nodo.tipoNodo == TipoExpresion.Var:
+        simbolo = buscar_variable(tabla, ambito_actual, nodo.nombre)
+        if simbolo is None:
+            print(f"[Error línea {nodo.lineaAparicion}] Variable '{nodo.nombre}' no declarada.")
+        else:
+            # Aquí puedes verificar que el tipo sea correcto si es necesario
+            pass
+
+    # Si el nodo es una declaración de función, comprobar si el tipo de retorno es consistente
+    elif nodo.tipoNodo == TipoExpresion.FunDec:
+        for stmt in nodo.sentencias:  # Recorremos las sentencias dentro de la función
+            recorre_postorden(stmt, tabla, nodo.nombre)  # Cambiar el ámbito a la función
+
+    # Si el nodo es una expresión de retorno
+    elif nodo.tipoNodo == TipoExpresion.Return:
+        tipo_func = buscar_tipo_funcion(tabla, ambito_actual)
+        if nodo.expresion is None and tipo_func != "void":
+            print(f"[Error línea {nodo.lineaAparicion}] Se esperaba una expresión en return (tipo {tipo_func}).")
+        elif nodo.expresion and tipo_func == "void":
+            print(f"[Error línea {nodo.lineaAparicion}] Return no debe tener expresión en función void.")
+
+    # Si el nodo es una asignación
+    elif nodo.tipoNodo == TipoExpresion.Op:
+        if nodo.operador == "=":
+            # Si es una asignación, verificamos que la variable de la izquierda esté declarada
+            simbolo = buscar_variable(tabla, ambito_actual, nodo.hijoIzquierdo.nombre)
+            if simbolo is None:
+                print(f"[Error línea {nodo.lineaAparicion}] Variable '{nodo.hijoIzquierdo.nombre}' no declarada para asignación.")
+            # También podríamos verificar que el tipo de la izquierda y derecha sean compatibles
+            # Ejemplo: Si la izquierda es un int, la derecha también debe ser un int
+            if simbolo and nodo.hijoIzquierdo.tipo != nodo.hijoDerecho.tipo:
+                print(f"[Error línea {nodo.lineaAparicion}] Tipos incompatibles en asignación: {nodo.hijoIzquierdo.tipo} = {nodo.hijoDerecho.tipo}")
+
+    # Si el nodo es un condicional if o un bucle while, la condición debe ser un entero
+    elif nodo.tipoNodo == TipoExpresion.If or nodo.tipoNodo == TipoExpresion.While:
+        if nodo.condicion:
+            tipo_condicion = buscar_tipo_expresion(tabla, ambito_actual, nodo.condicion)
+            if tipo_condicion != "int":
+                print(f"[Error línea {nodo.lineaAparicion}] La condición debe ser de tipo 'int', pero se encontró tipo '{tipo_condicion}'.")
+
+def buscar_variable(tabla, ambito, nombre):
+    # Buscar una variable en el ámbito actual y global
+    for scope in [ambito, "global"]:
+        if scope in tabla:
+            for simbolo in tabla[scope]:
+                if simbolo['nombre'] == nombre and simbolo['tipo'] != 'funcion':
+                    return simbolo
+    return None
+
+def buscar_tipo_funcion(tabla, nombre_funcion):
+    # Buscar el tipo de retorno de una función
+    if nombre_funcion in tabla:
+        for entrada in tabla["global"]:
+            if entrada["nombre"] == nombre_funcion:
+                return entrada["tipoRetorno"]
+    return None
+
+def buscar_tipo_expresion(tabla, ambito, expresion):
+    # Aquí sería necesario agregar lógica que determine el tipo de una expresión
+    # Esto es solo un ejemplo muy básico
+    if isinstance(expresion, NodoArbol):
+        if expresion.tipoNodo == TipoExpresion.Var:
+            return buscar_variable(tabla, ambito, expresion.nombre)['tipo']
+    return "int"  # Valor por defecto, si la expresión no es válida
+
+
+def semantica(tree, imprime=True):
+    tabla_resultado = {}
+    tabla_resultado =  tabla(tree, imprime)
+
+    #una vez obtenido la tabla de simbolos, se procede a recorrer el arbol en postorden
+
+    
 
 
 
@@ -176,6 +253,6 @@ posicion = 0
 
 globales(program, posicion, programLong)
 
-AST = parser(False)
+AST = parser(True)
 
 tabla(AST, True)
