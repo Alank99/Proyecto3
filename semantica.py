@@ -5,19 +5,6 @@ from globalTypes import *
 def es_array(nodo):
     return nodo.longitud is not None
 
-def insertar_en_tabla(tabla, ambito, nombre, tipo, es_array_flag, linea):
-    if ambito not in tabla:
-        tabla[ambito] = {}
-
-    if nombre in tabla[ambito]:
-        print(f"Error: '{nombre}' ya está declarado en el ámbito '{ambito}'")
-    else:
-        tabla[ambito][nombre] = {
-            "tipo": tipo,
-            "es_array": es_array_flag,
-            "linea": linea
-        }
-
 def recorrer_preorden(nodo, tabla, ambito_actual="global"):
     if isinstance(nodo, list):
         for subnodo in nodo:
@@ -37,11 +24,14 @@ def recorrer_preorden(nodo, tabla, ambito_actual="global"):
         nombre = nodo.nombre
         tipo_var = nodo.tipo
         es_array = nodo.longitud is not None
+        logitudArr = nodo.longitud if es_array else "-"
         linea = nodo.lineaAparicion
         entrada = {
             "nombre": nombre,
             "tipo": tipo_var,
+            "tipoRetorno": "-",
             "array": es_array,
+            "tamaño": "0" if logitudArr == "[]" else logitudArr,
             "linea": linea
         }
         tabla[ambito_actual].append(entrada)
@@ -57,7 +47,9 @@ def recorrer_preorden(nodo, tabla, ambito_actual="global"):
         tabla["global"].append({
             "nombre": nombre_func,
             "tipo": "funcion",
+            "tipoRetorno": nodo.tipo,
             "array": False,
+            "tamaño": "-",
             "linea": nodo.lineaAparicion
         })
 
@@ -66,10 +58,13 @@ def recorrer_preorden(nodo, tabla, ambito_actual="global"):
 
         # Agregar parámetros a la tabla de la función
         for param in nodo.parametros:
+            tamaño_param = param.longitud if param.longitud is not None else "-"
             entrada = {
                 "nombre": param.nombre,
                 "tipo": param.tipo,
+                "tipoRetorno": "-",
                 "array": param.longitud is not None,
+                "tamaño": "0" if param.longitud == "[]" else tamaño_param,
                 "linea": param.lineaAparicion
             }
             tabla[nuevo_ambito].append(entrada)
@@ -118,16 +113,16 @@ def imprimir_tabla(tabla):
             continue
 
         # Encabezados
-        print(f"{'Nombre'.ljust(15)}{'Tipo'.ljust(10)}{'Array'.ljust(10)}{'Línea'.ljust(10)}")
-        print("-" * 45)
+        print(f"{'Nombre'.ljust(15)}{'Tipo'.ljust(10)}{'Array'.ljust(10)}{'Tamaño'.ljust(10)}{'Línea'.ljust(10)}")
+        print("-" * 60)
 
-        # Filas
         for entrada in simbolos:
             nombre = str(entrada['nombre']).ljust(15)
             tipo = str(entrada['tipo']).ljust(10)
             es_array = str(entrada['array']).ljust(10)
+            tam = str(entrada['tamaño']).ljust(10)
             linea = str(entrada['linea']).ljust(10)
-            print(f"{nombre}{tipo}{es_array}{linea}")
+            print(f"{nombre}{tipo}{es_array}{tam}{linea}")
 
 
 def tabla(tree, imprime=True):
@@ -181,6 +176,6 @@ posicion = 0
 
 globales(program, posicion, programLong)
 
-AST = parser(True)
+AST = parser(False)
 
 tabla(AST, True)
