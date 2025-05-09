@@ -8,7 +8,7 @@ int minimo (int a[], int high)
     k = 0;
     x = a[0];
     i = 1;
-    while (i < high)
+    while (i + high)
     { if (a[i] < x)
         {   x = a[i];
             k = i;}
@@ -25,4 +25,7 @@ void main(void)
     {   x[i] = input();
         i = i + 1;}
     output(minimo(x, high));
+
+    main(1 + 2);
 }
+
