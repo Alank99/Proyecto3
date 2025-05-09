@@ -133,36 +133,39 @@ def tabla(tree, imprime=True):
     return tabla_resultado
 
 def recorre_postorden(nodo, tabla, ambito_actual="global"):
-    # Si el nodo es una lista, recorrer todos los elementos
     if isinstance(nodo, list):
         for subnodo in nodo:
             recorre_postorden(subnodo, tabla, ambito_actual)
-        return None
+        return
 
-    # Si el nodo es None, no hacer nada
     if nodo is None:
-        return None
+        return
 
-    # Primero recorrer los hijos del nodo
-    for hijo in (
-        nodo.hijoIzquierdo,
-        nodo.hijoDerecho,
-        nodo.sino,
-        nodo.entonces,
-        nodo.expresion,
-        nodo.condicion,
-        nodo.parteInterna,
-    ):
-        recorre_postorden(hijo, tabla, ambito_actual)
-
-    # Recorrer las listas de argumentos, parámetros y sentencias
-    for lista in (
-        nodo.argumentos,
-        nodo.parametros,
-        nodo.sentencias,
-    ):
-        for hijo in lista:
+    # Si el nodo es una declaración de función, cambiar ámbito ANTES de procesar hijos
+    if nodo.tipoNodo == TipoExpresion.FunDec:
+        nuevo_ambito = nodo.nombre
+        # Procesamos el cuerpo de la función con su nuevo ámbito
+        recorre_postorden(nodo.parteInterna, tabla, nuevo_ambito)
+    else:
+        # Recorrer los hijos con el mismo ámbito actual
+        for hijo in (
+            nodo.hijoIzquierdo,
+            nodo.hijoDerecho,
+            nodo.sino,
+            nodo.entonces,
+            nodo.expresion,
+            nodo.condicion,
+            nodo.parteInterna,
+        ):
             recorre_postorden(hijo, tabla, ambito_actual)
+
+        for lista in (
+            nodo.argumentos,
+            nodo.parametros,
+            nodo.sentencias,
+        ):
+            for hijo in lista:
+                recorre_postorden(hijo, tabla, ambito_actual)
 
     # **Semántica: Comprobaciones en cada tipo de nodo**
     
@@ -173,6 +176,7 @@ def recorre_postorden(nodo, tabla, ambito_actual="global"):
             print(f"[Error línea {nodo.lineaAparicion}] Variable '{nodo.nombre}' no declarada.")
         else:
             # Aquí puedes verificar que el tipo sea correcto si es necesario
+            #print(f"[Info línea {nodo.lineaAparicion}] Variable '{nodo.nombre}' de tipo '{simbolo['tipo']}' encontrada en el ámbito '{ambito_actual}'.")
             pass
 
     # Si el nodo es una declaración de función, comprobar si el tipo de retorno es consistente
@@ -213,6 +217,7 @@ def buscar_variable(tabla, ambito, nombre):
         if scope in tabla:
             for simbolo in tabla[scope]:
                 if simbolo['nombre'] == nombre and simbolo['tipo'] != 'funcion':
+                    #print(f"La variable '{nombre}' se declaró en el ámbito '{scope}'")
                     return simbolo
     return None
 
@@ -236,6 +241,10 @@ def buscar_tipo_expresion(tabla, ambito, expresion):
 def semantica(tree, imprime=True):
     tabla_resultado = {}
     tabla_resultado =  tabla(tree, imprime)
+    #procesamiento 
+    print("\n\nAnalizador sematico empezando:")
+    recorre_postorden(tree, tabla_resultado)
+    print("\n\nterminado:")
 
     #una vez obtenido la tabla de simbolos, se procede a recorrer el arbol en postorden
 
@@ -255,4 +264,4 @@ globales(program, posicion, programLong)
 
 AST = parser(True)
 
-tabla(AST, True)
+semantica(AST, True)
