@@ -25,7 +25,5 @@ void main(void)
     {   x[i] = input();
         i = i + 1;}
     output(minimo(x, high));
-
-    main(1 + 2);
 }
 

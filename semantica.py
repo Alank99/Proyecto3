@@ -304,7 +304,6 @@ def buscar_funcion(tabla, ambito):
 
 def buscar_tipo_expresion(tabla, ambito, expresion):
     if not isinstance(expresion, NodoArbol):
-        print(f"hola")
         return "int"
 
     tipo = expresion.tipoNodo
