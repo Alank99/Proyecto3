@@ -213,15 +213,10 @@ def recorre_postorden(nodo, tabla, ambito_actual="global"):
 
     # Si el nodo es una asignación
     elif nodo.tipoNodo == TipoExpresion.Op:
-        if nodo.operador == "=":
-            # Si es una asignación, verificamos que la variable de la izquierda esté declarada
-            simbolo = buscar_variable(tabla, ambito_actual, nodo.hijoIzquierdo.nombre)
-            if simbolo is None:
-                print(f"[Error línea {nodo.lineaAparicion}] Variable '{nodo.hijoIzquierdo.nombre}' no declarada para asignación.")
-            # También podríamos verificar que el tipo de la izquierda y derecha sean compatibles
-            # Ejemplo: Si la izquierda es un int, la derecha también debe ser un int
-            if simbolo and nodo.hijoIzquierdo.tipo != nodo.hijoDerecho.tipo:
-                print(f"[Error línea {nodo.lineaAparicion}] Tipos incompatibles en asignación: {nodo.hijoIzquierdo.tipo} = {nodo.hijoDerecho.tipo}")
+        tipo_izq = buscar_tipo_expresion(tabla, ambito_actual, nodo.hijoIzquierdo)
+        tipo_der = buscar_tipo_expresion(tabla, ambito_actual, nodo.hijoDerecho)
+
+            
 
     # Si el nodo es un condicional if o un bucle while, la condición debe ser un entero
     elif nodo.tipoNodo == TipoExpresion.If or nodo.tipoNodo == TipoExpresion.While:
@@ -229,7 +224,8 @@ def recorre_postorden(nodo, tabla, ambito_actual="global"):
             tipo_condicion = buscar_tipo_expresion(tabla, ambito_actual, nodo.condicion)
             if tipo_condicion != "int":
                 print(f"[Error línea {nodo.lineaAparicion}] La condición debe ser de tipo 'int', pero se encontró tipo '{tipo_condicion}'.")
-
+            if not buscar_operador_logico(nodo.condicion):
+                print(f"[Error línea {nodo.lineaAparicion}] La condición requiere por lo menos un operador lógico.")
     elif nodo.tipoNodo == TipoExpresion.Call:
         nombre_func = nodo.nombre
 
@@ -301,6 +297,19 @@ def buscar_funcion(tabla, ambito):
                     return simbolo['tipoRetorno']            
     return None
 
+def buscar_operador_logico(expresion):
+    if not isinstance(expresion, NodoArbol):
+        return False
+
+    tipo = expresion.tipoNodo
+
+    if tipo == TipoExpresion.Op:
+        if expresion.operador in OPERADORES_LOGICOS:
+            return True
+        return buscar_operador_logico(expresion.hijoIzquierdo) or buscar_operador_logico(expresion.hijoDerecho)
+    
+    return False
+    
 
 def buscar_tipo_expresion(tabla, ambito, expresion):
     if not isinstance(expresion, NodoArbol):
@@ -349,6 +358,8 @@ def buscar_tipo_expresion(tabla, ambito, expresion):
         if funcion:
             return funcion.get("tipoRetorno", "void")
         else:
+            if expresion.nombre == "input" or expresion.nombre == "output":
+                return "int"
             print(f"[Error línea {expresion.lineaAparicion}] Función '{expresion.nombre}' no declarada.")
             return "error"
 
