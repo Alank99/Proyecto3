@@ -2,9 +2,10 @@
    selección en un arreglo de 10 elementos. */
 
 int x[20];
+int z;
 
 int minimo (int a[], int high)
-{ int i; int x; int k;
+{ int i; int x; int k; int z;
     k = 0;
     x = a[0];
     i = 1;
@@ -20,10 +21,13 @@ int minimo (int a[], int high)
 void main(void)
 {   int i; int high;
     i = 0;
+    z = 0;
     high = input();
     while (i < high)
     {   x[i] = input();
         i = i + 1;}
     output(minimo(x, high));
+
+    main(void);
 }
 

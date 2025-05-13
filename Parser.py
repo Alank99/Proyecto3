@@ -83,6 +83,11 @@ def match(tokenEsperado):
 def args():
     global token
     argumentos = [] # Se inicializa la lista de argumentos
+    # Verifica si es void regeresa una lista vacia
+    if token == TokenType.VOID: # Si el token es un void
+        match(TokenType.VOID) # Se espera un void
+        return argumentos # Se regresa la lista de argumentos
+
     if token != TokenType.PARENTESIS_DER: 
         argumentos.append(expression())
         # Verifica si hay mas argumentos
