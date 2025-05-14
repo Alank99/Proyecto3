@@ -28,5 +28,7 @@ void main(void)
         i = i + 1;}
     output(minimo(x, high));
 
+    return 1;
+
 }
 

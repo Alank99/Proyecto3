@@ -452,20 +452,3 @@ def semantica(tree, imprime=True):
 
     #una vez obtenido la tabla de simbolos, se procede a recorrer el arbol en postorden
 
-    
-
-
-
-f = open("test.c-", "r")
-program = f.read()
-programLong = len(program)
-program = program + "$"
-posicion = 0
-
-#funciones para pasar los valores iniciales de las variables globales
-
-globales(program, posicion, programLong)
-
-AST = parser(True)
-
-semantica(AST, True)
